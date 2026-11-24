@@ -70,15 +70,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
       - name: Build image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          load: true
-          build-args: FLAVOR=${{ matrix.flavor }}
-          tags: larex-action-eynollah:test
+        run: docker build --build-arg FLAVOR=${{ matrix.flavor }} --tag larex-action-eynollah:test .
       - name: Start container
         run: |
           docker run --detach --name action --read-only --tmpfs /tmp \

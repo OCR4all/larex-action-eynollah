@@ -1,0 +1,135 @@
+version: 1
+id: eynollah-segmentation
+name: eynollah Segmentation
+description: Detects regions, text lines, and the reading order of scanned pages with eynollah.
+info: |
+  The result replaces the existing annotations of the selected pages. Pages on which nothing is detected keep their annotations.
+tags:
+  - Segmentation
+  - eynollah
+targets:
+  - PAGE
+
+endpoint:
+  url: https://larex.example.org/eynollah/dispatch
+  healthUrl: https://larex.example.org/eynollah/health
+  preflightUrl: https://larex.example.org/eynollah/preflight
+  timeoutSeconds: 30
+  auth:
+    type: hmac
+    secretRef: eynollah-segmentation-v1
+
+access:
+  execute: CURATOR
+
+locking:
+  mode: PAGES
+
+inputs:
+  images:
+    level: required
+    preferredImageType: COLOR
+  xml:
+    level: none
+
+outputs:
+  xml:
+    enabled: true
+    overwrites:
+      PAGE:
+        - REGIONS
+        - READING_ORDER
+  images:
+    enabled: false
+  files:
+    enabled: false
+
+concurrency:
+  maxActiveRuns: 1
+  scope: PROJECT
+
+parameters:
+  mode:
+    type: string
+    default: layout
+    description: Full layout analysis, or text lines only. Text lines are placed in a single region that covers the page and the layout settings below are ignored.
+    allowedValues:
+      values:
+        - { value: layout, label: Layout and text lines }
+        - { value: lines, label: Text lines only }
+  fullLayout:
+    type: boolean
+    default: true
+    description: Distinguish headings and drop capitals from paragraphs.
+  tables:
+    type: boolean
+    default: false
+    description: Detect table regions. Enable this only for pages with tables, since it can mistake other content for tables.
+  marginalia:
+    type: string
+    default: both
+    description: Side on which marginalia are searched for. Applies to pages with one or two columns.
+    allowedValues:
+      values:
+        - { value: both, label: Both sides }
+        - { value: left, label: Left }
+        - { value: right, label: Right }
+        - { value: "off", label: Do not detect marginalia }
+  splitParagraphsAtMarginalia:
+    type: boolean
+    default: false
+    description: Split the main text at the height of neighbouring marginalia.
+  readingOrder:
+    type: string
+    default: heuristic
+    description: How the reading order is determined. The model is slower, but can handle complex layouts better.
+    allowedValues:
+      values:
+        - { value: heuristic, label: Heuristic }
+        - { value: model, label: Model }
+  rightToLeft:
+    type: boolean
+    default: false
+    description: Read the columns from right to left.
+  curvedLines:
+    type: boolean
+    default: false
+    description: Detect the text lines of each region separately. This follows curved lines more closely and is slower.
+  cropPage:
+    type: boolean
+    default: true
+    description: Restrict the analysis to the detected page frame. Disable this for images that are already cropped.
+  binarize:
+    type: boolean
+    default: false
+    description: Binarize very dark, very bright, or low-contrast images before the analysis.
+  minColumns:
+    type: integer
+    default: 0
+    min: 0
+    max: 6
+    description: Minimum number of text columns. 0 means no minimum.
+  maxColumns:
+    type: integer
+    default: 0
+    min: 0
+    max: 6
+    description: Maximum number of text columns. 0 means no maximum.
+  regionSeparation:
+    type: number
+    default: 0.1
+    min: 0
+    max: 1
+    description: Confidence threshold for boundaries between regions. Lower values separate neighbouring regions more often.
+  lineSeparation:
+    type: number
+    default: 0.1
+    min: 0
+    max: 1
+    description: Confidence threshold for boundaries between text lines. Lower values separate neighbouring lines more often.
+  polygonTolerance:
+    type: number
+    default: 1
+    min: 0
+    max: 20
+    description: Maximum deviation in pixels when polygons are simplified. 0 keeps every point.

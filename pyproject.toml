@@ -1,0 +1,80 @@
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
+
+[project]
+name = "larex-action-eynollah"
+version = "0.1.0"
+description = "eynollah layout analysis Action for LAREX"
+readme = "README.md"
+authors = [
+    { name = "OCR4all", email = "ocr4all@uni-wuerzburg.de" }
+]
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "eynollah==0.10.1",
+    "httpx>=0.28",
+    "larex-action-sdk[fastapi]>=0.30.0,<0.31",
+    "pillow>=11",
+    "pydantic-settings>=2.16.0",
+    "uvicorn>=0.54.0",
+]
+
+[project.optional-dependencies]
+cpu = ["onnxruntime==1.26.0"]
+gpu = ["onnxruntime-gpu[cuda,cudnn]==1.26.0 ; sys_platform == 'linux' and platform_machine == 'x86_64'"]
+test = [
+    "lxml>=5,<7",
+    "pytest>=8,<9",
+    "pytest-asyncio>=1,<2",
+    "pyyaml>=6,<7",
+    "ruff>=0.12,<1",
+]
+
+[tool.uv]
+conflicts = [[{ extra = "cpu" }, { extra = "gpu" }]]
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+]
+
+[[tool.uv.dependency-metadata]]
+name = "eynollah"
+version = "0.10.1"
+requires-dist = ["ocrd>=3.13.2", "scikit-learn>=0.23.2", "scikit-image", "tabulate"]
+
+[tool.uv.build-backend]
+module-name = "larex_action"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q -m 'not models'"
+markers = ["models: runs the published eynollah models and needs EYNOLLAH_MODEL_DIR"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.semantic_release]
+build_command = """
+python -m pip install --disable-pip-version-check \"uv>=0.8,<1\"
+uv lock --upgrade-package \"$PACKAGE_NAME\"
+git add uv.lock
+uv build
+"""
+commit_message = "chore(release): {version}"
+allow_zero_version = true
+major_on_zero = false
+tag_format = "v{version}"
+version_toml = ["pyproject.toml:project.version"]
